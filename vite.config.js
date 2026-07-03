@@ -17,6 +17,9 @@ function devApiPlugin() {
       if (!process.env.STRIPE_SECRET_KEY && env.STRIPE_SECRET_KEY) {
         process.env.STRIPE_SECRET_KEY = env.STRIPE_SECRET_KEY
       }
+      if (!process.env.STRIPE_WEBHOOK_SECRET && env.STRIPE_WEBHOOK_SECRET) {
+        process.env.STRIPE_WEBHOOK_SECRET = env.STRIPE_WEBHOOK_SECRET
+      }
       if (!process.env.JOURNAL_ADMIN_PASSWORD && env.JOURNAL_ADMIN_PASSWORD) {
         process.env.JOURNAL_ADMIN_PASSWORD = env.JOURNAL_ADMIN_PASSWORD
       }
@@ -163,6 +166,58 @@ function devApiPlugin() {
           res.statusCode = 500
           res.setHeader("Content-Type", "application/json")
           res.end(JSON.stringify({ error: "Something went wrong. Please try again." }))
+        }
+      })
+
+      server.middlewares.use("/api/stripe-webhook", async (req, res) => {
+        if (req.method !== "POST") {
+          res.statusCode = 405
+          res.setHeader("Allow", "POST")
+          res.end(JSON.stringify({ error: "Method not allowed" }))
+          return
+        }
+        try {
+          const { stripe } = await server.ssrLoadModule("/api/lib/stripe.js")
+          const { processSubscriptionEvent } = await server.ssrLoadModule("/api/lib/subscriptions.js")
+
+          // Read the raw body (required for signature verification).
+          const chunks = []
+          for await (const chunk of req) chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk)
+          const rawBody = Buffer.concat(chunks)
+
+          const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+          let event
+          if (webhookSecret) {
+            try {
+              event = stripe.webhooks.constructEvent(rawBody, req.headers["stripe-signature"], webhookSecret)
+            } catch (err) {
+              console.log("[v0] dev webhook signature failed:", err?.message)
+              res.statusCode = 400
+              res.setHeader("Content-Type", "application/json")
+              res.end(JSON.stringify({ error: "Invalid signature." }))
+              return
+            }
+          } else {
+            // No secret in local dev: accept the unverified event so the flow
+            // can be exercised with `stripe trigger` / the Stripe CLI.
+            console.log("[v0] dev webhook: STRIPE_WEBHOOK_SECRET unset, skipping verification")
+            try {
+              event = JSON.parse(rawBody.toString("utf8") || "{}")
+            } catch {
+              event = {}
+            }
+          }
+
+          const result = await processSubscriptionEvent(stripe, event)
+          console.log("[v0] dev webhook processed:", event?.type, "-", result)
+          res.statusCode = 200
+          res.setHeader("Content-Type", "application/json")
+          res.end(JSON.stringify({ received: true }))
+        } catch (err) {
+          console.log("[v0] dev webhook failed:", err?.message)
+          res.statusCode = 500
+          res.setHeader("Content-Type", "application/json")
+          res.end(JSON.stringify({ error: "Webhook processing failed." }))
         }
       })
 
