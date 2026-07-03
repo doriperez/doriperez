@@ -12,6 +12,8 @@ const PRODUCT_BY_SLUG = Object.fromEntries(
   ].map((p) => [p.slug, p]),
 )
 const MAX_QTY = 99
+// Flat shipping fee applied to every order, waived for active members.
+export const SHIPPING_CENTS = 2900
 
 function getSql() {
   const connectionString = process.env.DATABASE_URL
@@ -95,11 +97,22 @@ export function applyMemberDiscount(value, rate) {
 }
 
 /**
+ * Return a new validated-order value with the flat shipping fee applied to the
+ * total. Shipping is free for active members. Computed server-side so it can't
+ * be tampered with.
+ */
+export function applyShipping(value, isMember) {
+  const shippingCents = isMember ? 0 : SHIPPING_CENTS
+  return { ...value, shippingCents, totalCents: value.totalCents + shippingCents }
+}
+
+/**
  * Build Stripe line_items from validated order items using server-side prices.
+ * A shipping line item is appended when shippingCents > 0.
  * No images are passed (per Stripe integration guidance for this runtime).
  */
 export function toStripeLineItems(value) {
-  return value.items.map((item) => ({
+  const lineItems = value.items.map((item) => ({
     price_data: {
       currency: "usd",
       product_data: {
@@ -112,6 +125,19 @@ export function toStripeLineItems(value) {
     },
     quantity: item.qty,
   }))
+
+  if (value.shippingCents > 0) {
+    lineItems.push({
+      price_data: {
+        currency: "usd",
+        product_data: { name: "Shipping & handling" },
+        unit_amount: value.shippingCents,
+      },
+      quantity: 1,
+    })
+  }
+
+  return lineItems
 }
 
 /**

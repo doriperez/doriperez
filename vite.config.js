@@ -341,7 +341,7 @@ function devApiPlugin() {
         try {
           const body = await readJson(req)
           const { stripe } = await server.ssrLoadModule("/api/lib/stripe.js")
-          const { validateOrder, applyMemberDiscount, toStripeLineItems, insertPendingOrder } =
+          const { validateOrder, applyMemberDiscount, applyShipping, toStripeLineItems, insertPendingOrder } =
             await server.ssrLoadModule("/api/lib/orders.js")
           const { getMemberFromReq, MEMBER_DISCOUNT_RATE } = await server.ssrLoadModule("/api/lib/auth.js")
 
@@ -354,7 +354,9 @@ function devApiPlugin() {
           }
 
           const member = await getMemberFromReq(req)
-          const value = member?.isMember ? applyMemberDiscount(parsed.value, MEMBER_DISCOUNT_RATE) : parsed.value
+          const isMember = Boolean(member?.isMember)
+          const discounted = isMember ? applyMemberDiscount(parsed.value, MEMBER_DISCOUNT_RATE) : parsed.value
+          const value = applyShipping(discounted, isMember)
 
           const proto = req.headers["x-forwarded-proto"] || "http"
           const host = req.headers["x-forwarded-host"] || req.headers.host

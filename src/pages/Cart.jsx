@@ -8,6 +8,9 @@ import { useCart } from "../cart/CartContext.jsx"
 import { useAuth, MEMBER_DISCOUNT_RATE } from "../auth/AuthContext.jsx"
 import { formatPrice, formatCents } from "../cart/format.js"
 
+// Flat shipping fee (mirrors SHIPPING_CENTS in api/lib/orders.js); free for members.
+const SHIPPING_CENTS = 2900
+
 export default function Cart() {
   const { t, lang, getProductBySlug } = useContent()
   const c = t.cart
@@ -31,7 +34,9 @@ export default function Cart() {
   const subtotalCents = lines.reduce((sum, l) => sum + l.lineCents, 0)
   // Members save 10%, enforced server-side; this is the matching preview.
   const discountCents = isMember ? Math.round(subtotalCents * MEMBER_DISCOUNT_RATE) : 0
-  const totalCents = subtotalCents - discountCents
+  // Flat shipping fee, free for members; matches the server-side calculation.
+  const shippingCents = lines.length > 0 && !isMember ? SHIPPING_CENTS : 0
+  const totalCents = subtotalCents - discountCents + shippingCents
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -188,15 +193,21 @@ export default function Cart() {
         <div className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
             <div className="border-b border-border pb-4">
-              {discountCents > 0 ? (
+              {lines.length > 0 ? (
                 <div className="mb-3 space-y-1.5">
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>Subtotal</span>
                     <span>{formatCents(subtotalCents, lang)}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm font-medium text-primary">
-                    <span>Member discount (10%)</span>
-                    <span>-{formatCents(discountCents, lang)}</span>
+                  {discountCents > 0 ? (
+                    <div className="flex items-center justify-between text-sm font-medium text-primary">
+                      <span>Member discount (10%)</span>
+                      <span>-{formatCents(discountCents, lang)}</span>
+                    </div>
+                  ) : null}
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Shipping</span>
+                    <span>{shippingCents > 0 ? formatCents(shippingCents, lang) : "Free"}</span>
                   </div>
                 </div>
               ) : null}
@@ -211,7 +222,7 @@ export default function Cart() {
                   to="/membership"
                   className="mt-3 inline-flex text-xs font-semibold text-primary hover:text-primary-hover"
                 >
-                  Become a member and save 10% on every order
+                  Become a member for 10% off and free shipping
                 </Link>
               ) : null}
             </div>

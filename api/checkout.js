@@ -1,5 +1,5 @@
 import { stripe } from "./lib/stripe.js"
-import { validateOrder, applyMemberDiscount, toStripeLineItems, insertPendingOrder } from "./lib/orders.js"
+import { validateOrder, applyMemberDiscount, applyShipping, toStripeLineItems, insertPendingOrder } from "./lib/orders.js"
 import { getMemberFromReq, MEMBER_DISCOUNT_RATE } from "./lib/auth.js"
 
 function getOrigin(req) {
@@ -29,9 +29,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: parsed.error })
     }
 
-    // Active members get MEMBER_DISCOUNT_RATE off, enforced server-side.
+    // Active members get MEMBER_DISCOUNT_RATE off and free shipping; everyone
+    // else pays the flat shipping fee. Both are enforced server-side.
     const member = await getMemberFromReq(req)
-    const value = member?.isMember ? applyMemberDiscount(parsed.value, MEMBER_DISCOUNT_RATE) : parsed.value
+    const isMember = Boolean(member?.isMember)
+    const discounted = isMember ? applyMemberDiscount(parsed.value, MEMBER_DISCOUNT_RATE) : parsed.value
+    const value = applyShipping(discounted, isMember)
 
     const origin = getOrigin(req)
     const session = await stripe.checkout.sessions.create({
