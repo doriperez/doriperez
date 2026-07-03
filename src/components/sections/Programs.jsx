@@ -1,4 +1,4 @@
-import ProgramPreview from "../product/ProgramPreview.jsx"
+import ProgramBrowser from "../product/ProgramBrowser.jsx"
 import { useContent } from "../../i18n/LangContext.jsx"
 
 export default function Programs() {
@@ -19,13 +19,9 @@ export default function Programs() {
         </div>
       </div>
 
-      {/* Every category previews its first two products; "show more" opens the full list. */}
-      <div className="container-page pb-16 md:pb-24">
-        <div className="divide-y divide-border">
-          {categories.map((category) => (
-            <ProgramPreview key={category.id} category={category} />
-          ))}
-        </div>
+      {/* One unified grid with category filter chips (de-saturated layout). */}
+      <div className="container-page pb-16 pt-10 md:pb-24">
+        <ProgramBrowser categories={categories} />
       </div>
     </section>
   )
