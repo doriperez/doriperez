@@ -33,7 +33,7 @@ const en = {
       consult: "Book consultation",
       startConsult: "Start Your Wellness Consultation",
     },
-    ticker: { label: "Best sellers", heading: "Best Sellers" },
+    ticker: { label: "Announcement", message: "New to peptide therapy?", cta: "Learn more about peptides" },
     hero: {
       eyebrow: "Physician-guided wellness",
       title: "Personalized Peptide & Wellness Programs Designed Around Your Biology",
@@ -531,7 +531,7 @@ const es = {
       consult: "Reservar consulta",
       startConsult: "Comienza tu consulta de bienestar",
     },
-    ticker: { label: "Más vendidos", heading: "Más vendidos" },
+    ticker: { label: "Anuncio", message: "¿Nuevo en la terapia con péptidos?", cta: "Conoce más sobre los péptidos" },
     hero: {
       eyebrow: "Bienestar guiado por médicos",
       title: "Programas personalizados de péptidos y bienestar diseñados en torno a tu biología",
@@ -1028,7 +1028,7 @@ const fr = {
       consult: "Réserver une consultation",
       startConsult: "Commencez votre consultation bien-être",
     },
-    ticker: { label: "Meilleures ventes", heading: "Meilleures ventes" },
+    ticker: { label: "Annonce", message: "Nouveau dans la thérapie par peptides ?", cta: "En savoir plus sur les peptides" },
     hero: {
       eyebrow: "Bien-être guidé par des médecins",
       title: "Programmes personnalisés de peptides et de bien-être conçus autour de votre biologie",
@@ -1427,7 +1427,7 @@ const fr = {
       {
         heading: "Disponibilité et sécurité",
         items: [
-          { q: "Chaque programme est-il disponible dans mon État ?", a: "La disponibilité varie selon l'État, la décision du praticien et les directives pharmaceutiques et réglementaires, et peut évoluer avec le temps. Votre éligibilité est confirmée lors du questionnaire et de l'examen du praticien." },
+          { q: "Chaque programme est-il disponible dans mon État ?", a: "La disponibilité varie selon l'État, la décision du praticien et les directives pharmaceutiques et réglementaires, et peut évoluer avec le temps. Votre éligibilité est confirm��e lors du questionnaire et de l'examen du praticien." },
           { q: "Et si un programme ne me convient pas ?", a: "Si un programme n'est pas cliniquement approprié, votre praticien peut recommander une alternative ou refuser de le prescrire. Votre sécurité passe toujours en premier." },
           { q: "IV-Dora donne-t-il des avis médicaux sur ce site web ?", a: "Non. Le contenu du site web est uniquement une information générale et non un avis médical. Consultez un praticien agréé pour vos besoins individuels." },
         ],
