@@ -1,4 +1,4 @@
-import { validateConsultation, insertConsultation } from "./lib/consultations.js"
+import { validateConsultation, insertConsultation } from "../lib/consultations.js"
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

@@ -1,6 +1,6 @@
-import { stripe } from "./lib/stripe.js"
-import { getMemberFromReq } from "./lib/auth.js"
-import { setSubscription } from "./lib/subscriptions.js"
+import { stripe } from "../lib/stripe.js"
+import { getMemberFromReq } from "../lib/auth.js"
+import { setSubscription } from "../lib/subscriptions.js"
 
 // Verify a completed subscription Checkout session and sync the member's
 // subscription state. Called on redirect back from Stripe.

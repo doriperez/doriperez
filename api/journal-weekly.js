@@ -3,7 +3,7 @@ import {
   validateWeekly,
   saveWeekly,
   checkAdminPassword,
-} from "./lib/journalWeekly.js"
+} from "../lib/journalWeekly.js"
 
 export default async function handler(req, res) {
   // Public read of the current weekly content.

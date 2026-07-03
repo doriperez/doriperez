@@ -1,6 +1,6 @@
-import { stripe } from "./lib/stripe.js"
-import { validateOrder, applyMemberDiscount, applyShipping, toStripeLineItems, insertPendingOrder } from "./lib/orders.js"
-import { getMemberFromReq, MEMBER_DISCOUNT_RATE } from "./lib/auth.js"
+import { stripe } from "../lib/stripe.js"
+import { validateOrder, applyMemberDiscount, applyShipping, toStripeLineItems, insertPendingOrder } from "../lib/orders.js"
+import { getMemberFromReq, MEMBER_DISCOUNT_RATE } from "../lib/auth.js"
 
 function getOrigin(req) {
   const proto = req.headers["x-forwarded-proto"] || "https"

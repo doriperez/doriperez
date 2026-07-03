@@ -55,7 +55,7 @@ function devApiPlugin() {
           }
 
           const { validateConsultation, insertConsultation } = await server.ssrLoadModule(
-            "/api/lib/consultations.js",
+            "/lib/consultations.js",
           )
           const parsed = validateConsultation(body)
           if (!parsed.ok) {
@@ -78,7 +78,7 @@ function devApiPlugin() {
 
       server.middlewares.use("/api/journal-weekly", async (req, res) => {
         try {
-          const mod = await server.ssrLoadModule("/api/lib/journalWeekly.js")
+          const mod = await server.ssrLoadModule("/lib/journalWeekly.js")
           if (req.method === "GET") {
             const weekly = await mod.getWeekly()
             res.statusCode = 200
@@ -120,7 +120,7 @@ function devApiPlugin() {
 
       server.middlewares.use("/api/auth", async (req, res) => {
         try {
-          const mod = await server.ssrLoadModule("/api/lib/auth.js")
+          const mod = await server.ssrLoadModule("/lib/auth.js")
           if (req.method === "GET") {
             const member = await mod.getMemberFromReq(req)
             res.statusCode = 200
@@ -177,8 +177,8 @@ function devApiPlugin() {
           return
         }
         try {
-          const { stripe } = await server.ssrLoadModule("/api/lib/stripe.js")
-          const { processSubscriptionEvent } = await server.ssrLoadModule("/api/lib/subscriptions.js")
+          const { stripe } = await server.ssrLoadModule("/lib/stripe.js")
+          const { processSubscriptionEvent } = await server.ssrLoadModule("/lib/subscriptions.js")
 
           // Read the raw body (required for signature verification).
           const chunks = []
@@ -229,9 +229,9 @@ function devApiPlugin() {
           return
         }
         try {
-          const { stripe } = await server.ssrLoadModule("/api/lib/stripe.js")
-          const auth = await server.ssrLoadModule("/api/lib/auth.js")
-          const subs = await server.ssrLoadModule("/api/lib/subscriptions.js")
+          const { stripe } = await server.ssrLoadModule("/lib/stripe.js")
+          const auth = await server.ssrLoadModule("/lib/auth.js")
+          const subs = await server.ssrLoadModule("/lib/subscriptions.js")
 
           const member = await auth.getMemberFromReq(req)
           if (!member) {
@@ -290,9 +290,9 @@ function devApiPlugin() {
           return
         }
         try {
-          const { stripe } = await server.ssrLoadModule("/api/lib/stripe.js")
-          const auth = await server.ssrLoadModule("/api/lib/auth.js")
-          const subs = await server.ssrLoadModule("/api/lib/subscriptions.js")
+          const { stripe } = await server.ssrLoadModule("/lib/stripe.js")
+          const auth = await server.ssrLoadModule("/lib/auth.js")
+          const subs = await server.ssrLoadModule("/lib/subscriptions.js")
 
           const member = await auth.getMemberFromReq(req)
           if (!member) {
@@ -340,10 +340,10 @@ function devApiPlugin() {
         }
         try {
           const body = await readJson(req)
-          const { stripe } = await server.ssrLoadModule("/api/lib/stripe.js")
+          const { stripe } = await server.ssrLoadModule("/lib/stripe.js")
           const { validateOrder, applyMemberDiscount, applyShipping, toStripeLineItems, insertPendingOrder } =
-            await server.ssrLoadModule("/api/lib/orders.js")
-          const { getMemberFromReq, MEMBER_DISCOUNT_RATE } = await server.ssrLoadModule("/api/lib/auth.js")
+            await server.ssrLoadModule("/lib/orders.js")
+          const { getMemberFromReq, MEMBER_DISCOUNT_RATE } = await server.ssrLoadModule("/lib/auth.js")
 
           const parsed = validateOrder(body)
           if (!parsed.ok) {
@@ -397,8 +397,8 @@ function devApiPlugin() {
             res.end(JSON.stringify({ error: "Missing session_id." }))
             return
           }
-          const { stripe } = await server.ssrLoadModule("/api/lib/stripe.js")
-          const { markOrderPaid } = await server.ssrLoadModule("/api/lib/orders.js")
+          const { stripe } = await server.ssrLoadModule("/lib/stripe.js")
+          const { markOrderPaid } = await server.ssrLoadModule("/lib/orders.js")
 
           const session = await stripe.checkout.sessions.retrieve(sessionId)
           const paid = session.payment_status === "paid"

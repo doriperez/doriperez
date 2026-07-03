@@ -1,5 +1,5 @@
-import { stripe } from "./lib/stripe.js"
-import { processSubscriptionEvent } from "./lib/subscriptions.js"
+import { stripe } from "../lib/stripe.js"
+import { processSubscriptionEvent } from "../lib/subscriptions.js"
 
 // Stripe must receive the exact raw request body to verify the signature, so we
 // disable Vercel's automatic body parsing for this function.

@@ -1,5 +1,5 @@
-import { stripe } from "./lib/stripe.js"
-import { markOrderPaid } from "./lib/orders.js"
+import { stripe } from "../lib/stripe.js"
+import { markOrderPaid } from "../lib/orders.js"
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {

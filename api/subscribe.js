@@ -1,6 +1,6 @@
-import { stripe } from "./lib/stripe.js"
-import { getMemberFromReq } from "./lib/auth.js"
-import { getMemberRow, setStripeCustomer, membershipLineItem } from "./lib/subscriptions.js"
+import { stripe } from "../lib/stripe.js"
+import { getMemberFromReq } from "../lib/auth.js"
+import { getMemberRow, setStripeCustomer, membershipLineItem } from "../lib/subscriptions.js"
 
 function getOrigin(req) {
   const proto = req.headers["x-forwarded-proto"] || "https"
