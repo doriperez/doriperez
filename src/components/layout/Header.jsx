@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { ChevronDown, Menu, X, ArrowRight, ShoppingBag } from "lucide-react"
+import { ChevronDown, Menu, X, ArrowRight, ShoppingBag, User } from "lucide-react"
 import Logo from "../ui/Logo.jsx"
 import Button from "../ui/Button.jsx"
 import LanguageSwitcher from "../ui/LanguageSwitcher.jsx"
 import { useContent } from "../../i18n/LangContext.jsx"
 import { useCart } from "../../cart/CartContext.jsx"
+import { useAuth } from "../../auth/AuthContext.jsx"
 
 // Cart icon button with a live item-count badge.
 function CartButton({ label }) {
@@ -26,8 +27,23 @@ function CartButton({ label }) {
   )
 }
 
+// Account icon: links to the account page when signed in, sign-in when not.
+function AccountButton({ label }) {
+  const { isAuthed } = useAuth()
+  return (
+    <Link
+      to={isAuthed ? "/account" : "/login"}
+      className="rounded-full p-2 text-foreground hover:bg-muted"
+      aria-label={label}
+    >
+      <User size={20} aria-hidden="true" />
+    </Link>
+  )
+}
+
 export default function Header() {
   const { t, nav } = useContent()
+  const { isAuthed } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [megaOpen, setMegaOpen] = useState(false)
   const megaRef = useRef(null)
@@ -56,6 +72,7 @@ export default function Header() {
 
   const links = [
     { label: t.header.shop, href: "/#hsa-store" },
+    { label: "Membership", href: "/membership" },
     { label: t.header.safety, href: "/#safety" },
     { label: t.header.journal, href: "/journal" },
     { label: t.header.faq, href: "/faq" },
@@ -126,6 +143,7 @@ export default function Header() {
         {/* Right actions */}
         <div className="hidden items-center gap-2 lg:flex">
           <LanguageSwitcher />
+          <AccountButton label={isAuthed ? "Your account" : "Sign in"} />
           <CartButton label={t.cart.open} />
           <Button to="/consultation" size="sm">
             {t.header.consult}
@@ -134,6 +152,7 @@ export default function Header() {
 
         {/* Mobile toggle */}
         <div className="flex items-center gap-1 lg:hidden">
+          <AccountButton label={isAuthed ? "Your account" : "Sign in"} />
           <CartButton label={t.cart.open} />
           <LanguageSwitcher />
           <button

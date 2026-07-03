@@ -5,12 +5,14 @@ import Button from "../components/ui/Button.jsx"
 import ProductVial from "../components/product/ProductVial.jsx"
 import { useContent } from "../i18n/LangContext.jsx"
 import { useCart } from "../cart/CartContext.jsx"
+import { useAuth, MEMBER_DISCOUNT_RATE } from "../auth/AuthContext.jsx"
 import { formatPrice, formatCents } from "../cart/format.js"
 
 export default function Cart() {
   const { t, lang, getProductBySlug } = useContent()
   const c = t.cart
   const { items, setQty, removeItem, count } = useCart()
+  const { isMember } = useAuth()
   const [searchParams] = useSearchParams()
   const canceled = searchParams.get("canceled") === "1"
 
@@ -26,7 +28,10 @@ export default function Cart() {
     })
     .filter(Boolean)
 
-  const totalCents = lines.reduce((sum, l) => sum + l.lineCents, 0)
+  const subtotalCents = lines.reduce((sum, l) => sum + l.lineCents, 0)
+  // Members save 10%, enforced server-side; this is the matching preview.
+  const discountCents = isMember ? Math.round(subtotalCents * MEMBER_DISCOUNT_RATE) : 0
+  const totalCents = subtotalCents - discountCents
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -50,6 +55,7 @@ export default function Cart() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(payload),
       })
       const body = await res.json().catch(() => ({}))
@@ -181,11 +187,33 @@ export default function Cart() {
         {/* Checkout summary + form */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <span className="font-display text-lg font-semibold text-foreground">{c.total}</span>
-              <span className="font-display text-2xl font-semibold text-foreground">
-                {formatCents(totalCents, lang)}
-              </span>
+            <div className="border-b border-border pb-4">
+              {discountCents > 0 ? (
+                <div className="mb-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span>{formatCents(subtotalCents, lang)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm font-medium text-primary">
+                    <span>Member discount (10%)</span>
+                    <span>-{formatCents(discountCents, lang)}</span>
+                  </div>
+                </div>
+              ) : null}
+              <div className="flex items-center justify-between">
+                <span className="font-display text-lg font-semibold text-foreground">{c.total}</span>
+                <span className="font-display text-2xl font-semibold text-foreground">
+                  {formatCents(totalCents, lang)}
+                </span>
+              </div>
+              {!isMember ? (
+                <Link
+                  to="/membership"
+                  className="mt-3 inline-flex text-xs font-semibold text-primary hover:text-primary-hover"
+                >
+                  Become a member and save 10% on every order
+                </Link>
+              ) : null}
             </div>
 
             <h2 className="mt-5 font-display text-lg font-semibold text-foreground">{c.checkoutHeading}</h2>

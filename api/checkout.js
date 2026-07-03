@@ -1,5 +1,6 @@
 import { stripe } from "./lib/stripe.js"
-import { validateOrder, toStripeLineItems, insertPendingOrder } from "./lib/orders.js"
+import { validateOrder, applyMemberDiscount, toStripeLineItems, insertPendingOrder } from "./lib/orders.js"
+import { getMemberFromReq, MEMBER_DISCOUNT_RATE } from "./lib/auth.js"
 
 function getOrigin(req) {
   const proto = req.headers["x-forwarded-proto"] || "https"
@@ -28,16 +29,20 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: parsed.error })
     }
 
+    // Active members get MEMBER_DISCOUNT_RATE off, enforced server-side.
+    const member = await getMemberFromReq(req)
+    const value = member?.isMember ? applyMemberDiscount(parsed.value, MEMBER_DISCOUNT_RATE) : parsed.value
+
     const origin = getOrigin(req)
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      line_items: toStripeLineItems(parsed.value),
-      customer_email: parsed.value.email,
+      line_items: toStripeLineItems(value),
+      customer_email: value.email,
       success_url: `${origin}/cart/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart?canceled=1`,
     })
 
-    await insertPendingOrder(parsed.value, session.id)
+    await insertPendingOrder(value, session.id)
 
     return res.status(200).json({ url: session.url })
   } catch (err) {

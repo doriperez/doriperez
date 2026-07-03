@@ -79,6 +79,22 @@ export function validateOrder(body) {
 }
 
 /**
+ * Return a new validated-order value with a member discount applied to every
+ * item's unit price and the order total. Rate is a fraction (e.g. 0.1 = 10%).
+ * The discount is applied server-side so it cannot be tampered with.
+ */
+export function applyMemberDiscount(value, rate) {
+  if (!rate || rate <= 0) return value
+  let totalCents = 0
+  const items = value.items.map((item) => {
+    const unitCents = Math.round(item.unitCents * (1 - rate))
+    totalCents += unitCents * item.qty
+    return { ...item, unitCents, memberDiscount: true }
+  })
+  return { ...value, items, totalCents, memberDiscountRate: rate }
+}
+
+/**
  * Build Stripe line_items from validated order items using server-side prices.
  * No images are passed (per Stripe integration guidance for this runtime).
  */

@@ -115,6 +115,167 @@ function devApiPlugin() {
         }
       })
 
+      server.middlewares.use("/api/auth", async (req, res) => {
+        try {
+          const mod = await server.ssrLoadModule("/api/lib/auth.js")
+          if (req.method === "GET") {
+            const member = await mod.getMemberFromReq(req)
+            res.statusCode = 200
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify({ member }))
+            return
+          }
+          if (req.method === "POST") {
+            const body = await readJson(req)
+            const action = body?.action
+            if (action === "logout") {
+              await mod.destroySession(mod.parseCookies(req).member_session)
+              res.statusCode = 200
+              res.setHeader("Set-Cookie", mod.clearCookie())
+              res.setHeader("Content-Type", "application/json")
+              res.end(JSON.stringify({ ok: true }))
+              return
+            }
+            if (action === "signup" || action === "login") {
+              const result = action === "signup" ? await mod.signup(body) : await mod.login(body)
+              if (!result.ok) {
+                res.statusCode = result.status || 400
+                res.setHeader("Content-Type", "application/json")
+                res.end(JSON.stringify({ error: result.error }))
+                return
+              }
+              res.statusCode = 200
+              res.setHeader("Set-Cookie", mod.sessionCookie(result.session.token, result.session.expires))
+              res.setHeader("Content-Type", "application/json")
+              res.end(JSON.stringify({ member: result.member }))
+              return
+            }
+            res.statusCode = 400
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify({ error: "Unknown action." }))
+            return
+          }
+          res.statusCode = 405
+          res.setHeader("Allow", "GET, POST")
+          res.end(JSON.stringify({ error: "Method not allowed" }))
+        } catch (err) {
+          console.log("[v0] dev auth failed:", err?.message)
+          res.statusCode = 500
+          res.setHeader("Content-Type", "application/json")
+          res.end(JSON.stringify({ error: "Something went wrong. Please try again." }))
+        }
+      })
+
+      server.middlewares.use("/api/subscribe", async (req, res) => {
+        if (req.method !== "POST") {
+          res.statusCode = 405
+          res.setHeader("Allow", "POST")
+          res.end(JSON.stringify({ error: "Method not allowed" }))
+          return
+        }
+        try {
+          const { stripe } = await server.ssrLoadModule("/api/lib/stripe.js")
+          const auth = await server.ssrLoadModule("/api/lib/auth.js")
+          const subs = await server.ssrLoadModule("/api/lib/subscriptions.js")
+
+          const member = await auth.getMemberFromReq(req)
+          if (!member) {
+            res.statusCode = 401
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify({ error: "Please sign in to become a member." }))
+            return
+          }
+          if (member.isMember) {
+            res.statusCode = 400
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify({ error: "You already have an active membership." }))
+            return
+          }
+
+          const row = await subs.getMemberRow(member.id)
+          let customerId = row?.stripe_customer_id
+          if (!customerId) {
+            const customer = await stripe.customers.create({
+              email: member.email,
+              name: [member.firstName, member.lastName].filter(Boolean).join(" ") || undefined,
+              metadata: { memberId: String(member.id) },
+            })
+            customerId = customer.id
+            await subs.setStripeCustomer(member.id, customerId)
+          }
+
+          const proto = req.headers["x-forwarded-proto"] || "http"
+          const host = req.headers["x-forwarded-host"] || req.headers.host
+          const origin = `${proto}://${host}`
+          const session = await stripe.checkout.sessions.create({
+            mode: "subscription",
+            customer: customerId,
+            line_items: [subs.membershipLineItem()],
+            metadata: { memberId: String(member.id) },
+            success_url: `${origin}/account?subscribed=1&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${origin}/membership?canceled=1`,
+          })
+
+          res.statusCode = 200
+          res.setHeader("Content-Type", "application/json")
+          res.end(JSON.stringify({ url: session.url }))
+        } catch (err) {
+          console.log("[v0] dev subscribe failed:", err?.message)
+          res.statusCode = 500
+          res.setHeader("Content-Type", "application/json")
+          res.end(JSON.stringify({ error: "Something went wrong. Please try again." }))
+        }
+      })
+
+      server.middlewares.use("/api/confirm-subscription", async (req, res) => {
+        if (req.method !== "GET") {
+          res.statusCode = 405
+          res.setHeader("Allow", "GET")
+          res.end(JSON.stringify({ error: "Method not allowed" }))
+          return
+        }
+        try {
+          const { stripe } = await server.ssrLoadModule("/api/lib/stripe.js")
+          const auth = await server.ssrLoadModule("/api/lib/auth.js")
+          const subs = await server.ssrLoadModule("/api/lib/subscriptions.js")
+
+          const member = await auth.getMemberFromReq(req)
+          if (!member) {
+            res.statusCode = 401
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify({ error: "Please sign in." }))
+            return
+          }
+          const sessionId = new URL(req.url, "http://localhost").searchParams.get("session_id")
+          if (!sessionId) {
+            res.statusCode = 400
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify({ error: "Missing session_id." }))
+            return
+          }
+          const session = await stripe.checkout.sessions.retrieve(sessionId, {
+            expand: ["subscription"],
+          })
+          const sub = session.subscription
+          const active = sub && (sub.status === "active" || sub.status === "trialing")
+          if (active) {
+            await subs.setSubscription(member.id, {
+              subscriptionId: sub.id,
+              status: sub.status,
+              currentPeriodEnd: sub.current_period_end,
+            })
+          }
+          res.statusCode = 200
+          res.setHeader("Content-Type", "application/json")
+          res.end(JSON.stringify({ active: Boolean(active) }))
+        } catch (err) {
+          console.log("[v0] dev confirm-subscription failed:", err?.message)
+          res.statusCode = 500
+          res.setHeader("Content-Type", "application/json")
+          res.end(JSON.stringify({ error: "Something went wrong verifying your membership." }))
+        }
+      })
+
       server.middlewares.use("/api/checkout", async (req, res) => {
         if (req.method !== "POST") {
           res.statusCode = 405
@@ -125,8 +286,9 @@ function devApiPlugin() {
         try {
           const body = await readJson(req)
           const { stripe } = await server.ssrLoadModule("/api/lib/stripe.js")
-          const { validateOrder, toStripeLineItems, insertPendingOrder } =
+          const { validateOrder, applyMemberDiscount, toStripeLineItems, insertPendingOrder } =
             await server.ssrLoadModule("/api/lib/orders.js")
+          const { getMemberFromReq, MEMBER_DISCOUNT_RATE } = await server.ssrLoadModule("/api/lib/auth.js")
 
           const parsed = validateOrder(body)
           if (!parsed.ok) {
@@ -136,18 +298,21 @@ function devApiPlugin() {
             return
           }
 
+          const member = await getMemberFromReq(req)
+          const value = member?.isMember ? applyMemberDiscount(parsed.value, MEMBER_DISCOUNT_RATE) : parsed.value
+
           const proto = req.headers["x-forwarded-proto"] || "http"
           const host = req.headers["x-forwarded-host"] || req.headers.host
           const origin = `${proto}://${host}`
 
           const session = await stripe.checkout.sessions.create({
             mode: "payment",
-            line_items: toStripeLineItems(parsed.value),
-            customer_email: parsed.value.email,
+            line_items: toStripeLineItems(value),
+            customer_email: value.email,
             success_url: `${origin}/cart/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/cart?canceled=1`,
           })
-          await insertPendingOrder(parsed.value, session.id)
+          await insertPendingOrder(value, session.id)
 
           res.statusCode = 200
           res.setHeader("Content-Type", "application/json")

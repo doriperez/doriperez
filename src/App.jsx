@@ -12,6 +12,10 @@ import JournalAdmin from "./pages/JournalAdmin.jsx"
 import Consultation from "./pages/Consultation.jsx"
 import Cart from "./pages/Cart.jsx"
 import CheckoutSuccess from "./pages/CheckoutSuccess.jsx"
+import MembershipPage from "./pages/Membership.jsx"
+import Login from "./pages/Login.jsx"
+import Signup from "./pages/Signup.jsx"
+import Account from "./pages/Account.jsx"
 
 // Scrolls to top on route change, and to the hash target when present.
 function ScrollManager() {
@@ -45,6 +49,10 @@ export default function App() {
           <Route path="/consultation" element={<Consultation />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/cart/success" element={<CheckoutSuccess />} />
+          <Route path="/membership" element={<MembershipPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/account" element={<Account />} />
         </Routes>
       </main>
       <Footer />
