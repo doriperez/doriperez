@@ -1,9 +1,16 @@
 import ProgramRow from "../product/ProgramRow.jsx"
+import ProgramCompact from "../product/ProgramCompact.jsx"
 import { useContent } from "../../i18n/LangContext.jsx"
+
+// Category promoted with the full product-card carousel (beauty / skin).
+const FEATURED_CATEGORY = "dermatology"
 
 export default function Programs() {
   const { t, categories } = useContent()
   const p = t.programs
+
+  const featured = categories.find((c) => c.id === FEATURED_CATEGORY)
+  const rest = categories.filter((c) => c.id !== FEATURED_CATEGORY)
 
   return (
     <section id="programs" className="scroll-mt-24 bg-background">
@@ -19,10 +26,16 @@ export default function Programs() {
         </div>
       </div>
 
-      <div className="divide-y divide-border">
-        {categories.map((category) => (
-          <ProgramRow key={category.id} category={category} />
-        ))}
+      {/* Promoted beauty category — full product carousel. */}
+      {featured ? <ProgramRow category={featured} /> : null}
+
+      {/* Remaining categories — compact, listed layout. */}
+      <div className="container-page pb-16 md:pb-24">
+        <div className="grid gap-x-12 border-t border-border sm:grid-cols-2">
+          {rest.map((category) => (
+            <ProgramCompact key={category.id} category={category} />
+          ))}
+        </div>
       </div>
     </section>
   )
