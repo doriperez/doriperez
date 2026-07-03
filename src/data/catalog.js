@@ -114,10 +114,12 @@ export const CATEGORY_PRODUCTS = {
     "methylcobalamin",
   ],
   dermatology: [
+    // Featured beauty heroes (shown first in the preview)
+    "ghk-cu", "glow",
     // Rx
     "botulinum-toxin",
     // Compounded
-    "ghk-cu", "glow", "glutathione", "lemon-bottle", "snap-8",
+    "glutathione", "lemon-bottle", "snap-8",
     // Supplement
     "b5",
   ],
